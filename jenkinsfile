@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_HOST = 'tcp://172.24.0.3:2375'
+        DOCKER_HOST = 'tcp://172.24.0.3:2376'
         DOCKER_TLS_VERIFY = '0'  // Désactive la vérification TLS
         DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials')
         DOCKER_IMAGE_NAME = "cr4zy5h4rk/qr_auth_backend"
