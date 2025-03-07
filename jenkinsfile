@@ -1,0 +1,54 @@
+pipeline {
+    agent any
+    
+    environment {
+        // Remplacez avec vos informations
+        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials')
+        DOCKER_IMAGE_NAME = "cr4zy5h4rk/qr_auth_backend"
+        DOCKER_IMAGE_TAG = "${env.BUILD_NUMBER}"
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                // Récupérer le code source depuis GitHub
+                checkout scm
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Construire l'image Docker à partir du Dockerfile du projet
+                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ."
+                    // Tag latest aussi
+                    sh "docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ${DOCKER_IMAGE_NAME}:latest"
+                }
+            }
+        }
+        
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    // Connexion à Docker Hub
+                    sh "echo ${DOCKER_HUB_CREDENTIALS_PSW} | docker login -u ${DOCKER_HUB_CREDENTIALS_USR} --password-stdin"
+                    
+                    // Pousser l'image vers Docker Hub
+                    sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+                    sh "docker push ${DOCKER_IMAGE_NAME}:latest"
+                    
+                    // Déconnexion de Docker Hub
+                    sh "docker logout"
+                }
+            }
+        }
+        
+        stage('Clean Up') {
+            steps {
+                // Nettoyage des images locales
+                sh "docker rmi ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+                sh "docker rmi ${DOCKER_IMAGE_NAME}:latest"
+            }
+        }
+    }
+}
