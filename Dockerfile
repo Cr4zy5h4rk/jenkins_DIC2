@@ -1,14 +1,19 @@
-FROM maven:3.8.5-openjdk-17 AS build
-WORKDIR /app
+# Base image from docker hub
+FROM python:3.9
 
-COPY pom.xml .
-RUN mvn dependency:go-offline
+# Create main directory from where we work
+WORKDIR /code
 
-COPY . .
-RUN mvn clean package -DskipTests
+# Copy requirements file
+COPY ./requirements.txt /code/requirements.txt
 
-FROM openjdk:17-jdk-slim
-WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Install requirements from requirement.txt copied in the above step
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+
+# Copy code from local to container
+COPY ./app /code/app
+
+EXPOSE 8000
+
+# Execute main file to run the App
+CMD ["uvicorn", "app.server.app:app", "--host", "0.0.0.0", "--port", "8000"]
