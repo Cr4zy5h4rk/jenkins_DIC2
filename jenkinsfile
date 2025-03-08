@@ -1,8 +1,7 @@
 pipeline {
-    agent {
-        docker {
-            image 'docker:dind'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
+    agent{
+        node{
+            label 'docker-agent-alpine'
         }
     }
     
@@ -15,6 +14,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                // Récupérer le code source depuis GitHub
                 checkout scm
             }
         }
@@ -23,7 +23,9 @@ pipeline {
             steps {
                 script {
                     sh "docker --version"
+                    // Construire l'image Docker à partir du Dockerfile du projet
                     sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ."
+                    // Tag latest aussi
                     sh "docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ${DOCKER_IMAGE_NAME}:latest"
                 }
             }
@@ -32,11 +34,14 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 script {
+                    // Connexion à Docker Hub
                     sh "echo ${DOCKER_HUB_CREDENTIALS_PSW} | docker login -u ${DOCKER_HUB_CREDENTIALS_USR} --password-stdin"
                     
+                    // Pousser l'image vers Docker Hub
                     sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
                     sh "docker push ${DOCKER_IMAGE_NAME}:latest"
                     
+                    // Déconnexion de Docker Hub
                     sh "docker logout"
                 }
             }
@@ -44,6 +49,7 @@ pipeline {
         
         stage('Clean Up') {
             steps {
+                // Nettoyage des images locales
                 sh "docker rmi ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
                 sh "docker rmi ${DOCKER_IMAGE_NAME}:latest"
             }
